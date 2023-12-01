@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+    networks:
+      - sera-ts-network
+
+  rabbitmq-ts:
+    image: "rabbitmq:3.9.11-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "hushh"
+    networks:
+      - sera-ts-network
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  consumer:
+    build:
+      context: ./consumer
+    volumes:
+      - ./consumer:/usr/src/consumer
+    environment:
+      NODE_ENV: development
+    networks:
+      - sera-ts-network
+    depends_on:
+      rabbitmq-ts:
+        condition: service_healthy
+
+networks:
+  sera-ts-network:
+
+
